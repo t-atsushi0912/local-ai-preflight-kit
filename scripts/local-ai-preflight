@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ARG=""
+ARTIFACT_ROOT_ARG=""
+MAX_BYTES="${LOCAL_AI_CONTEXT_MAX_BYTES:-6000}"
+RUN_SUMMARY=1
+
+usage() {
+  cat <<'EOF'
+usage: scripts/local-ai-preflight [--repo PATH] [--artifact-root PATH] [--max-bytes N] [--no-summarize]
+
+Builds compact git context, probes local Ollama, writes result.json and summary.md.
+
+Environment:
+  LOCAL_AI_ARTIFACT_ROOT
+  LOCAL_AI_CONTEXT_MAX_BYTES
+  LOCAL_AI_PROJECTS_PARENT
+  LOCAL_AI_OLLAMA_HOSTS
+  LOCAL_AI_OLLAMA_MODEL
+EOF
+}
+
+json_string() {
+  python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo)
+      REPO_ARG="$2"
+      shift 2
+      ;;
+    --artifact-root)
+      ARTIFACT_ROOT_ARG="$2"
+      shift 2
+      ;;
+    --max-bytes)
+      MAX_BYTES="$2"
+      shift 2
+      ;;
+    --no-summarize)
+      RUN_SUMMARY=0
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      if [[ -z "${REPO_ARG}" ]]; then
+        REPO_ARG="$1"
+        shift
+      else
+        echo "local-ai-preflight: unexpected argument: $1" >&2
+        usage >&2
+        exit 2
+      fi
+      ;;
+  esac
+done
+
+if ! [[ "${MAX_BYTES}" =~ ^[0-9]+$ ]]; then
+  echo "local-ai-preflight: --max-bytes must be a non-negative integer." >&2
+  exit 2
+fi
+
+repo_input="${REPO_ARG:-$(pwd)}"
+if ! repo_root="$(git -C "${repo_input}" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "local-ai-preflight: target is not inside a git repository: ${repo_input}" >&2
+  exit 1
+fi
+
+repo_root="$(cd "${repo_root}" && pwd -P)"
+projects_parent="${LOCAL_AI_PROJECTS_PARENT:-}"
+if [[ "${repo_root}" == "/" || "${repo_root}" == "${HOME}" || "${repo_root}" == "/tmp" ]]; then
+  echo "local-ai-preflight: refusing to run against a broad parent directory." >&2
+  exit 1
+fi
+if [[ -n "${projects_parent}" ]]; then
+  projects_parent="$(cd "${projects_parent}" 2>/dev/null && pwd -P || true)"
+  if [[ -n "${projects_parent}" && "${repo_root}" == "${projects_parent}" ]]; then
+    echo "local-ai-preflight: refusing to run against the configured parent directory." >&2
+    exit 1
+  fi
+fi
+
+artifact_root="${ARTIFACT_ROOT_ARG:-${LOCAL_AI_ARTIFACT_ROOT:-${repo_root}/.local-ai-preflight/artifacts}}"
+run_date="$(date -u +%F)"
+run_id="$(date -u +%Y%m%dT%H%M%SZ)"
+run_dir="${artifact_root}/${run_date}/${run_id}"
+result_path="${run_dir}/result.json"
+summary_path="${run_dir}/summary.md"
+mkdir -p "${run_dir}"
+
+repo_name="$(basename "${repo_root}")"
+context="$(
+  {
+    printf 'repo_name: %s\n' "${repo_name}"
+    printf 'timestamp_utc: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    printf '\n## git status --short\n'
+    git -C "${repo_root}" status --short || true
+    printf '\n## git diff --stat\n'
+    git -C "${repo_root}" diff --stat --no-ext-diff || true
+  } | python3 -c 'import sys; limit=int(sys.argv[1]); data=sys.stdin.read(); sys.stdout.write(data.encode("utf-8")[:limit].decode("utf-8", errors="ignore"))' "${MAX_BYTES}"
+)"
+context_bytes="$(printf '%s' "${context}" | wc -c | tr -d ' ')"
+
+status="probe_failed"
+reason="probe_failed"
+selected_host=""
+summary="Local Ollama probe did not find a reachable endpoint."
+
+set +e
+probe_output="$(bash "${SCRIPT_DIR}/ollama_probe.sh" 2>&1)"
+probe_exit="$?"
+set -e
+
+if [[ "${probe_exit}" -eq 0 ]]; then
+  selected_host="$(printf '%s\n' "${probe_output}" | sed -n 's/^selected_host=//p' | head -1)"
+  if [[ "${RUN_SUMMARY}" -eq 1 ]]; then
+    set +e
+    summary_output="$(printf '%s' "${context}" | LOCAL_AI_OLLAMA_HOST="${selected_host}" bash "${SCRIPT_DIR}/ollama_summarize.sh" 2>&1)"
+    summary_exit="$?"
+    set -e
+    if [[ "${summary_exit}" -eq 0 ]]; then
+      status="ok"
+      reason="ok"
+      summary="${summary_output}"
+    else
+      status="summarize_failed"
+      reason="summarize_failed"
+      summary="Local Ollama endpoint responded, but summary generation failed."
+    fi
+  else
+    status="probe_ok"
+    reason="summary_skipped"
+    summary="Local Ollama endpoint responded. Summary step was skipped."
+  fi
+fi
+
+python3 - "${result_path}" "${status}" "${reason}" "${repo_name}" "${run_date}" "${run_id}" "${selected_host}" "${context_bytes}" "${summary}" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+payload = {
+    "status": sys.argv[2],
+    "reason": sys.argv[3],
+    "repo_name": sys.argv[4],
+    "run_date": sys.argv[5],
+    "run_id": sys.argv[6],
+    "selected_host": sys.argv[7] or None,
+    "context_bytes": int(sys.argv[8]),
+    "summary": sys.argv[9],
+}
+path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+PY
+
+cat > "${summary_path}" <<EOF
+# Local AI Preflight
+
+## Status
+- ${status}
+
+## Reason
+- ${reason}
+
+## Repo
+- ${repo_name}
+
+## Run
+- ${run_date}/${run_id}
+
+## Summary
+- ${summary}
+EOF
+
+case "${artifact_root}" in
+  "${repo_root}"/*)
+    latest_dir="${artifact_root}/latest"
+    mkdir -p "${latest_dir}"
+    cp "${result_path}" "${latest_dir}/result.json"
+    cp "${summary_path}" "${latest_dir}/summary.md"
+    ;;
+esac
+
+printf 'result=%s\n' "${result_path}"
+printf 'summary=%s\n' "${summary_path}"
+exit 0

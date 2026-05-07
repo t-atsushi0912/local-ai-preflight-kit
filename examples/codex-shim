@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+KIT_ROOT="${LOCAL_AI_PREFLIGHT_KIT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PREFLIGHT="${KIT_ROOT}/scripts/local-ai-preflight"
+REAL_BIN="${CODEX_REAL_BIN:-}"
+
+if [[ -z "${REAL_BIN}" ]]; then
+  echo "codex-shim example: set CODEX_REAL_BIN to the real executable before use." >&2
+  exit 2
+fi
+
+if [[ ! -x "${REAL_BIN}" ]]; then
+  echo "codex-shim example: CODEX_REAL_BIN is not executable." >&2
+  exit 127
+fi
+
+if [[ ! -x "${PREFLIGHT}" ]]; then
+  echo "codex-shim example: local-ai-preflight is not executable." >&2
+  exit 127
+fi
+
+"${PREFLIGHT}" --repo "$(pwd)" >/dev/null
+exec "${REAL_BIN}" "$@"

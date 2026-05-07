@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: bash -n scripts/local-ai-preflight scripts/preflight-cleanup scripts/ollama_probe.sh scripts/ollama_summarize.sh examples/codex-shim
+
+      - name: Help smoke
+        run: |
+          scripts/ollama_probe.sh --help
+          scripts/ollama_summarize.sh --help
+          scripts/local-ai-preflight --help
+          scripts/preflight-cleanup --help
+
+      - name: Fixture tests
+        run: |
+          tests/cleanup_fixture_test.sh
+          tests/preflight_smoke_test.sh
+
+      - name: Public scan
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          terms = [
+              "Fin" + "dy",
+              "fin" + "dy",
+              "ファイ" + "ンディ",
+              "転" + "職",
+              "採" + "用",
+              "採" + "用" + "担当",
+              "評" + "価される",
+              "評" + "価してもらう",
+              "評" + "価向け",
+              "求" + "人",
+              "t-" + "atsushi0912",
+              "it" + "khyt",
+              "gla" + "y_",
+              "/ho" + "me/",
+              "/mnt/c/" + "Users",
+              "172" + ".",
+              "100" + ".",
+              "tok" + "en",
+              "sec" + "ret",
+              "pass" + "word",
+              "api" + "_key",
+              "api" + "key",
+              "au" + "th",
+              "coo" + "kie",
+              "s" + "sh",
+          ]
+          pattern = re.compile("|".join(re.escape(term) for term in terms))
+          ignored = {".git"}
+          hits = []
+          for path in pathlib.Path(".").rglob("*"):
+              if any(part in ignored for part in path.parts) or not path.is_file():
+                  continue
+              text = path.read_text(encoding="utf-8", errors="ignore")
+              if pattern.search(text):
+                  hits.append(str(path))
+          if hits:
+              print("\n".join(hits))
+              sys.exit(1)
+          PY
+
+      - name: Tracked output scan
+        run: |
+          git ls-files | grep -E '(^|/)(artifacts|outputs|logs|reports|cache|snapshots|screenshots)(/|$)|(^|/)\.env$' && exit 1 || true

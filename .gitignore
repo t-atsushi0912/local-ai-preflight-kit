@@ -1,0 +1,12 @@
+.local-ai-preflight/
+artifacts/
+outputs/
+logs/
+reports/
+cache/
+snapshots/
+screenshots/
+.env
+*.log
+__pycache__/
+.pytest_cache/
