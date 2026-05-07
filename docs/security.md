@@ -5,7 +5,7 @@
 ## Input Rules
 
 - 渡すのは短い運用 context に限定し、transcript 全量は避けてください。
-- summary や command text に secret、credential、私的なデータを入れないでください。
+- summary や command text に 機密値、認証情報、私的なデータを入れないでください。
 - repository や archive と一緒に共有する前に、生成された artifact を確認してください。
 
 ## Artifact Rules

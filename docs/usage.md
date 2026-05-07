@@ -30,7 +30,7 @@ model を選ぶ場合:
 LOCAL_AI_OLLAMA_MODEL="gemma3:latest" scripts/ollama_summarize.sh --input-file /path/to/context.txt
 ```
 
-summary に渡す内容は短く保ち、secret は含めないでください。
+summary に渡す内容は短く保ち、機密値 は含めないでください。
 
 ## Preflight を実行する
 

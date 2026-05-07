@@ -57,7 +57,7 @@ scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14 --
 
 ## Safety Notes
 
-- summary、command、prompt に secret を渡さないでください。
+- summary、command、prompt に 機密値 を渡さないでください。
 - 生成された artifact を公開しないでください。
 - scripts は既定でローカルの Ollama endpoint のみを対象にします。
 - `.local-ai-preflight/` は version control に含めないでください。
