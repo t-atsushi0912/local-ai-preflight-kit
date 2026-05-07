@@ -1,34 +1,35 @@
 # Security
 
-This kit is designed for local preflight checks. It does not make project data public by itself, but the operator controls what text is provided to the scripts.
+この kit はローカルでの preflight 確認を前提にしています。project data を自動で公開することはありませんが、scripts に何を渡すかは利用者が制御します。
 
 ## Input Rules
 
-- Pass short operational context, not full transcripts.
-- Keep credentials and private customer data out of summaries and command text.
-- Review generated artifacts before sharing any repository or archive.
+- 渡すのは短い運用 context に限定し、transcript 全量は避けてください。
+- summary や command text に secret、credential、私的なデータを入れないでください。
+- repository や archive と一緒に共有する前に、生成された artifact を確認してください。
 
 ## Artifact Rules
 
-- Generated artifacts belong under `.local-ai-preflight/` by default.
-- `.local-ai-preflight/` is ignored by git.
-- Do not commit generated run output.
+- 生成 artifact は既定で `.local-ai-preflight/` 配下に置きます。
+- `.local-ai-preflight/` は git で ignore します。
+- 生成された run output は commit しないでください。
+- generated artifacts を外部公開しないでください。
 
 ## Endpoint Rules
 
-- Default endpoints are loopback-only.
-- `LOCAL_AI_OLLAMA_HOSTS` can override endpoint candidates.
-- Treat non-loopback overrides as an explicit local policy decision.
+- 既定の endpoint は loopback-only です。
+- `LOCAL_AI_OLLAMA_HOSTS` で候補を上書きできます。
+- non-loopback への変更は、ローカル運用上の明示的な判断として扱ってください。
 
 ## Cleanup Rules
 
-- Cleanup defaults to dry-run.
-- `--apply` is required before removal.
-- Broad roots are refused.
-- Fixture tests cover old runs, today's runs, and `latest/`.
+- cleanup の既定は dry-run です。
+- 削除には `--apply` が必要です。
+- 広すぎる root は拒否します。
+- fixture test では古い run、当日の run、`latest/` を確認します。
 
 ## Path Rules
 
-- Public docs should use placeholders and repo-relative paths.
-- Avoid fixed machine paths in committed examples.
-- Keep local wrapper paths in local configuration files, not in the shared repository.
+- 公開する docs や examples では placeholder と repo-relative path を使ってください。
+- commit する例に固定の machine path を書かないでください。
+- local wrapper 用の path は共有 repository ではなく、各自の local configuration に置いてください。

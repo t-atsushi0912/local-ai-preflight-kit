@@ -1,48 +1,50 @@
 # Usage
 
-## Probe Ollama
+## Ollama を確認する
 
 ```bash
 scripts/ollama_probe.sh
 ```
 
-Override candidates:
+候補を上書きする場合:
 
 ```bash
 LOCAL_AI_OLLAMA_HOSTS="http://127.0.0.1:11434 http://localhost:11434" scripts/ollama_probe.sh
 ```
 
-## Summarize Text
+## Text を要約する
 
 ```bash
 git status --short | scripts/ollama_summarize.sh
 ```
 
-Use a file:
+file を使う場合:
 
 ```bash
 scripts/ollama_summarize.sh --input-file /path/to/context.txt
 ```
 
-Choose a model:
+model を選ぶ場合:
 
 ```bash
 LOCAL_AI_OLLAMA_MODEL="gemma3:latest" scripts/ollama_summarize.sh --input-file /path/to/context.txt
 ```
 
-## Run Preflight
+summary に渡す内容は短く保ち、secret は含めないでください。
+
+## Preflight を実行する
 
 ```bash
 scripts/local-ai-preflight --repo .
 ```
 
-Use a custom artifact root:
+artifact root を変える場合:
 
 ```bash
 LOCAL_AI_ARTIFACT_ROOT=".local-ai-preflight/artifacts" scripts/local-ai-preflight --repo .
 ```
 
-Skip summarization while still checking the local endpoint:
+ローカル endpoint の確認だけを行い、summary を省く場合:
 
 ```bash
 scripts/local-ai-preflight --repo . --no-summarize
@@ -50,13 +52,13 @@ scripts/local-ai-preflight --repo . --no-summarize
 
 ## Cleanup
 
-Dry-run:
+dry-run:
 
 ```bash
 scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14
 ```
 
-Apply:
+apply:
 
 ```bash
 scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14 --apply
@@ -68,9 +70,11 @@ JSON output:
 scripts/preflight-cleanup --root .local-ai-preflight/artifacts --json
 ```
 
+cleanup は既定で dry-run です。削除を実行するまで挙動を確認できます。
+
 ## Wrapper Example
 
-`examples/codex-shim` expects `CODEX_REAL_BIN` to point to the real executable.
+`examples/codex-shim` では `CODEX_REAL_BIN` に実際の executable を指定します。
 
 ```bash
 CODEX_REAL_BIN="/path/to/codex" examples/codex-shim --help
@@ -78,4 +82,4 @@ CODEX_REAL_BIN="/path/to/codex" examples/codex-shim --help
 
 ## Environment Example
 
-`examples/config.env.example` lists common settings. Use it as a template for local configuration, not as a committed machine profile.
+`examples/config.env.example` には代表的な設定を載せています。共有用の固定 profile ではなく、ローカル設定の template として使ってください。

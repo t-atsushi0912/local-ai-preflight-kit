@@ -1,20 +1,20 @@
 # local-ai-preflight-kit
 
-`local-ai-preflight-kit` is a small set of shell scripts for running a local AI check before starting a larger AI CLI session.
+`local-ai-preflight-kit` は、大きな AI CLI セッションを始める前に、ローカル環境で短い事前確認を行うための小さな shell script 集です。
 
-The kit keeps the workflow local. It gathers compact git context, probes a local Ollama endpoint, writes small run artifacts, and leaves the caller with a short summary that can be reviewed before continuing.
+ワークフローは local-only を前提にしています。最小限の git context を集め、ローカルの Ollama endpoint を確認し、小さな artifact を書き出し、続行前に見直せる短い summary を残します。
 
-## What It Provides
+## 提供内容
 
-- `scripts/ollama_probe.sh`: checks local Ollama `/api/tags` candidates.
-- `scripts/ollama_summarize.sh`: summarizes stdin or a file through a local Ollama API.
-- `scripts/local-ai-preflight`: captures compact git context and writes preflight artifacts.
-- `scripts/preflight-cleanup`: trims old preflight run directories with dry-run as the default.
-- `examples/codex-shim`: example wrapper that runs preflight before a real CLI binary.
+- `scripts/ollama_probe.sh`: ローカルの Ollama `/api/tags` 候補を確認します。
+- `scripts/ollama_summarize.sh`: stdin または file の内容をローカル Ollama API で要約します。
+- `scripts/local-ai-preflight`: 短い git context を取得し、preflight artifact を書き出します。
+- `scripts/preflight-cleanup`: 古い preflight 実行 directory を整理します。既定は dry-run です。
+- `examples/codex-shim`: 実際の CLI binary を呼ぶ前に preflight を挟む wrapper 例です。
 
-## Usage
+## 使い方
 
-Run directly after cloning:
+clone 後は次のように実行できます。
 
 ```bash
 scripts/ollama_probe.sh
@@ -22,49 +22,49 @@ scripts/local-ai-preflight --repo .
 scripts/preflight-cleanup --root .local-ai-preflight/artifacts --dry-run
 ```
 
-The default preflight artifact root is:
+既定の preflight artifact root は次のとおりです。
 
 ```text
 .local-ai-preflight/artifacts/
 ```
 
-This directory is ignored by git.
+この directory は git の管理対象外です。
 
-## Configuration
+## 設定
 
-Copy the example environment file only if you want local overrides:
+ローカルで上書き設定が必要な場合だけ、example の environment file をコピーしてください。
 
 ```bash
 cp examples/config.env.example .env
 ```
 
-Then adjust values for your machine. The scripts work without that file when Ollama is available at the default local endpoints.
+その後、手元の環境に合わせて値を調整します。既定のローカル endpoint で Ollama が利用できる場合、この file がなくても scripts は動作します。
 
 ## Cleanup
 
-Cleanup is dry-run unless `--apply` is passed:
+cleanup は `--apply` を付けない限り dry-run のままです。
 
 ```bash
 scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14
 scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14 --apply
 ```
 
-`latest/` and today's run directory are preserved.
+`latest/` と当日の run directory は保持されます。
 
 ## CI
 
-The included workflow checks shell syntax, help output, fixture cleanup behavior, preflight smoke behavior, and public-safety scans.
+同梱の workflow では shell syntax、help output、fixture cleanup の挙動、preflight smoke の挙動、公開前提の safety scan を確認します。
 
 ## Safety Notes
 
-- Do not pass sensitive values in summaries, commands, or prompts.
-- Do not publish generated artifacts.
-- The scripts only target local Ollama endpoints by default.
-- Keep `.local-ai-preflight/` out of version control.
+- summary、command、prompt に secret を渡さないでください。
+- 生成された artifact を公開しないでください。
+- scripts は既定でローカルの Ollama endpoint のみを対象にします。
+- `.local-ai-preflight/` は version control に含めないでください。
 
 ## Non-goals
 
-- Remote ingestion
-- Background daemons
-- Full terminal transcript capture
-- Replacement for project documentation or test results
+- remote への送信
+- background daemon
+- terminal transcript 全量の記録
+- project documentation や test result の代替
