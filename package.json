@@ -6,12 +6,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/t-atsushi0912/local-ai-preflight-kit.git"
+    "url": "git+https://github.com/sudoworks-lab/local-ai-preflight-kit.git"
   },
   "bugs": {
-    "url": "https://github.com/t-atsushi0912/local-ai-preflight-kit/issues"
+    "url": "https://github.com/sudoworks-lab/local-ai-preflight-kit/issues"
   },
-  "homepage": "https://github.com/t-atsushi0912/local-ai-preflight-kit#readme",
+  "homepage": "https://github.com/sudoworks-lab/local-ai-preflight-kit#readme",
   "bin": {
     "local-ai-preflight": "dist/cli.js"
   },
