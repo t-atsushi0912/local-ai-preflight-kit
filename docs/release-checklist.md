@@ -26,6 +26,8 @@ real Ollama 成功経路は任意確認です。必要なら `LOCAL_AI_RUN_REAL_
 ## Public Scan
 
 - tracked-files public scan
+- tracked-files pass を公開前判定の正本として扱う
+- 個人環境由来の absolute-path / token pattern は zero-hit を維持する
 - `git ls-files '*.tgz' artifacts latest output tmp 2>/dev/null || true`
 - tgz、artifact、tmp 生成物が tracked に入っていないこと
 

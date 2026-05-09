@@ -236,7 +236,7 @@ test("summarize success returns continue and writes sanitized summary output", a
           response.end(
             JSON.stringify({
               response:
-                "opaque_value=ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 /Users/demo/project C:\\Users\\demo\\work 10.24.3.8",
+                "opaque_value=ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 /tmp/example-project D:\\example\\work 10.24.3.8",
             }),
           );
         });
@@ -265,7 +265,7 @@ test("summarize success returns continue and writes sanitized summary output", a
       assert.ok(summary.includes("[redacted-path]"));
       assert.ok(summary.includes("[redacted-host]"));
       assert.ok(summary.includes("[redacted-value]"));
-      assert.ok(!summary.includes("/Users/demo/project"));
+      assert.ok(!summary.includes("/tmp/example-project"));
       assert.ok(!summary.includes("10.24.3.8"));
       assert.ok(!summary.includes("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"));
       assertMatchesResultSchema(artifact);
@@ -296,14 +296,14 @@ test("result schema forbids additional properties", () => {
 
 test("summary safety rule removes path-like and assignment-like values", () => {
   const input =
-    "opaque_value=ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 /Users/demo/project C:\\Users\\demo\\work 10.24.3.8";
+    "opaque_value=ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 /tmp/example-project D:\\example\\work 10.24.3.8";
   const output = sanitizeSummaryForArtifact(input);
 
   assert.equal(SUMMARY_SAFETY_RULE, "public_summary_v1");
   assert.ok(output.includes("[redacted-value]"));
   assert.ok(output.includes("[redacted-path]"));
   assert.ok(output.includes("[redacted-host]"));
-  assert.ok(!output.includes("/Users/demo/project"));
+  assert.ok(!output.includes("/tmp/example-project"));
   assert.ok(!output.includes("10.24.3.8"));
   assert.ok(!output.includes("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"));
 });
