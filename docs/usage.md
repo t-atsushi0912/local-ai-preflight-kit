@@ -7,6 +7,19 @@ npm install
 npm run build
 ```
 
+local package として確認する場合:
+
+```bash
+npm pack
+tmpdir="$(mktemp -d)"
+cd "${tmpdir}"
+npm init -y
+npm install /path/to/local-ai-preflight-kit-0.1.0.tgz
+npx local-ai-preflight --help
+```
+
+この flow は local install 確認用です。npm publish 済みの前提は置きません。
+
 ## TypeScript CLI を実行する
 
 ```bash
@@ -29,6 +42,12 @@ context byte 上限を調整する場合:
 
 ```bash
 node dist/cli.js --repo . --max-bytes 8000
+```
+
+version を確認する場合:
+
+```bash
+node dist/cli.js --version
 ```
 
 `continue` は exit code `0`、`review` は `1`、`stop` は `2` です。

@@ -6,8 +6,15 @@
   "bin": {
     "local-ai-preflight": "dist/cli.js"
   },
+  "files": [
+    "dist/",
+    "schemas/result.schema.json",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
+    "prepack": "npm run build",
     "test": "npm run build && node --test tests/*.test.js",
     "verify": "npm run build && node --test tests/*.test.js && node dist/cli.js --help >/dev/null && node dist/cli.js --version >/dev/null"
   },
