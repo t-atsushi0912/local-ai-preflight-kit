@@ -3,11 +3,18 @@ import path from "node:path";
 import { buildArtifactPaths, writeArtifacts } from "./artifacts";
 import { buildRepoContext, resolveRepoRoot } from "./git";
 import { probeOllama, summarizeContext } from "./ollama";
+import { sanitizeSummaryForArtifact } from "./summary_safety";
 import {
+  DECISION,
+  EXIT_CODE_BY_DECISION,
+  PREFLIGHT_REASON,
+  PREFLIGHT_STATUS,
+  RESULT_REASON_SETS,
   SCHEMA_VERSION,
   type CliOptions,
   type Decision,
   type PreflightRunResult,
+  type PreflightReason,
   type PreflightStatus,
   type RepoContext,
   type ResultArtifact,
@@ -22,20 +29,10 @@ function formatDateParts(now: Date): { createdAt: string; runDate: string; runId
   };
 }
 
-function sanitizeSummary(value: string): string {
-  return value
-    .replace(/[A-Za-z]:\\[^\s)]+/g, "[redacted-path]")
-    .replace(/\/[^\s)]+(?:\/[^\s)]+)+/g, "[redacted-path]")
-    .replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, "[redacted-host]")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 240);
-}
-
 function renderSummaryMarkdown(
   decision: Decision,
   status: PreflightStatus,
-  reasons: string[],
+  reasons: PreflightReason[],
   repoContext: RepoContext | null,
   safeSummary: string,
 ): string {
@@ -66,7 +63,7 @@ function buildArtifact(
   decision: Decision,
   exitCode: number,
   status: PreflightStatus,
-  reasons: string[],
+  reasons: PreflightReason[],
   repoName: string | null,
   artifactDir: string,
   summaryPath: string,
@@ -89,14 +86,7 @@ function buildArtifact(
 }
 
 function toExitCode(decision: Decision): number {
-  switch (decision) {
-    case "continue":
-      return 0;
-    case "review":
-      return 1;
-    case "stop":
-      return 2;
-  }
+  return EXIT_CODE_BY_DECISION[decision];
 }
 
 export async function runPreflight(options: CliOptions): Promise<PreflightRunResult> {
@@ -115,42 +105,42 @@ export async function runPreflight(options: CliOptions): Promise<PreflightRunRes
 
   let decision: Decision;
   let status: PreflightStatus;
-  let reasons: string[];
+  let reasons: PreflightReason[];
   let repoContext: RepoContext | null = null;
   let safeSummary = "";
 
   if (!repoRoot) {
-    decision = "stop";
-    status = "not_git_repo";
-    reasons = ["not_git_repo"];
+    decision = DECISION.STOP;
+    status = PREFLIGHT_STATUS.NOT_GIT_REPO;
+    reasons = [...RESULT_REASON_SETS.NOT_GIT_REPO];
     safeSummary = "The target path is not inside a git repository.";
   } else {
     repoContext = buildRepoContext(repoRoot, options.maxBytes);
     const probe = await probeOllama();
 
     if (!probe.ok || !probe.selectedHost) {
-      decision = "review";
-      status = "probe_failed";
-      reasons = ["git_repo", "ollama_probe_failed"];
+      decision = DECISION.REVIEW;
+      status = PREFLIGHT_STATUS.PROBE_FAILED;
+      reasons = [...RESULT_REASON_SETS.PROBE_FAILED];
       safeSummary = "Local model probe did not complete. Review the environment before continuing.";
     } else if (options.noSummarize) {
-      decision = "continue";
-      status = "ok";
-      reasons = ["git_repo", "ollama_probe_ok", "summary_skipped"];
+      decision = DECISION.CONTINUE;
+      status = PREFLIGHT_STATUS.OK;
+      reasons = [...RESULT_REASON_SETS.SUMMARY_SKIPPED];
       safeSummary = "Preflight completed without the summary step.";
     } else {
       const summaryResult = await summarizeContext(repoContext.context, probe.selectedHost, options.maxBytes);
 
       if (!summaryResult.ok || !summaryResult.summary) {
-        decision = "review";
-        status = "summarize_failed";
-        reasons = ["git_repo", "ollama_probe_ok", "summarize_failed"];
+        decision = DECISION.REVIEW;
+        status = PREFLIGHT_STATUS.SUMMARIZE_FAILED;
+        reasons = [...RESULT_REASON_SETS.SUMMARIZE_FAILED];
         safeSummary = "Summary generation did not complete. Review before continuing.";
       } else {
-        decision = "continue";
-        status = "ok";
-        reasons = ["git_repo", "ollama_probe_ok", "summary_created"];
-        safeSummary = sanitizeSummary(summaryResult.summary);
+        decision = DECISION.CONTINUE;
+        status = PREFLIGHT_STATUS.OK;
+        reasons = [...RESULT_REASON_SETS.SUMMARY_CREATED];
+        safeSummary = sanitizeSummaryForArtifact(summaryResult.summary);
       }
     }
   }

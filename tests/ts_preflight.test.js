@@ -1,13 +1,26 @@
 const assert = require("node:assert/strict");
 const { execFileSync, spawn, spawnSync } = require("node:child_process");
-const { mkdtempSync, readFileSync, rmSync } = require("node:fs");
+const { existsSync, mkdtempSync, readFileSync, rmSync } = require("node:fs");
 const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
+const Ajv2020 = require("ajv/dist/2020");
 
 const repoRoot = path.resolve(__dirname, "..");
 const cliPath = path.join(repoRoot, "dist", "cli.js");
+const schemaPath = path.join(repoRoot, "schemas", "result.schema.json");
+const { sanitizeSummaryForArtifact, SUMMARY_SAFETY_RULE } = require(path.join(
+  repoRoot,
+  "dist",
+  "summary_safety.js",
+));
+
+function createResultValidator() {
+  const ajv = new Ajv2020({ allErrors: true });
+  const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
+  return ajv.compile(schema);
+}
 
 function createRepoFixture() {
   const fixture = mkdtempSync(path.join(os.tmpdir(), "local-ai-preflight-ts-"));
@@ -36,6 +49,12 @@ function createRepoFixture() {
 
 function parseArtifact(resultPath) {
   return JSON.parse(readFileSync(resultPath, "utf8"));
+}
+
+function assertMatchesResultSchema(artifact) {
+  const validate = createResultValidator();
+  const valid = validate(artifact);
+  assert.equal(valid, true, JSON.stringify(validate.errors, null, 2));
 }
 
 function runCli(args, env) {
@@ -107,13 +126,16 @@ test("continue decision writes parseable artifacts and updates latest", async ()
       assert.equal(artifact.status, "ok");
       assert.deepEqual(artifact.reasons, ["git_repo", "ollama_probe_ok", "summary_skipped"]);
       assert.equal(artifact.schema_version, "1");
-      assert.equal(artifact.result_path, path.join(fixture.artifactDir, "result.json"));
-      assert.equal(artifact.summary_path, path.join(fixture.artifactDir, "summary.md"));
+      assert.equal(path.normalize(artifact.result_path), path.join(fixture.artifactDir, "result.json"));
+      assert.equal(path.normalize(artifact.summary_path), path.join(fixture.artifactDir, "summary.md"));
+      assert.equal(path.normalize(artifact.artifact_dir), fixture.artifactDir);
       assert.ok(summary.includes("Decision: continue"));
       assert.ok(!summary.includes(fixture.repoDir));
+      assertMatchesResultSchema(artifact);
 
       const latest = parseArtifact(path.join(fixture.artifactDir, "latest", "result.json"));
       assert.equal(latest.decision, "continue");
+      assertMatchesResultSchema(latest);
     });
   } finally {
     fixture.cleanup();
@@ -143,6 +165,8 @@ test("review decision is returned when probe fails", () => {
     assert.equal(artifact.decision, "review");
     assert.equal(artifact.exit_code, 1);
     assert.equal(artifact.status, "probe_failed");
+    assert.deepEqual(artifact.reasons, ["git_repo", "ollama_probe_failed"]);
+    assertMatchesResultSchema(artifact);
   } finally {
     fixture.cleanup();
   }
@@ -164,7 +188,107 @@ test("stop decision is returned outside git repositories", () => {
     assert.equal(artifact.decision, "stop");
     assert.equal(artifact.exit_code, 2);
     assert.equal(artifact.status, "not_git_repo");
+    assert.deepEqual(artifact.reasons, ["not_git_repo"]);
+    assertMatchesResultSchema(artifact);
   } finally {
     rmSync(fixture, { recursive: true, force: true });
   }
+});
+
+test("summarize success returns continue and writes sanitized summary output", async () => {
+  const fixture = createRepoFixture();
+
+  try {
+    await withProbeServer((request, response) => {
+      if (request.url === "/api/tags") {
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end('{"models":[{"name":"gemma3:latest"}]}');
+        return;
+      }
+
+      if (request.url === "/api/generate" && request.method === "POST") {
+        let body = "";
+        request.setEncoding("utf8");
+        request.on("data", (chunk) => {
+          body += chunk;
+        });
+        request.on("end", () => {
+          const payload = JSON.parse(body);
+          assert.equal(payload.stream, false);
+          assert.equal(typeof payload.prompt, "string");
+          response.writeHead(200, { "Content-Type": "application/json" });
+          response.end(
+            JSON.stringify({
+              response:
+                "opaque_value=ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 /Users/demo/project C:\\Users\\demo\\work 10.24.3.8",
+            }),
+          );
+        });
+        return;
+      }
+
+      response.writeHead(404);
+      response.end();
+    }, async (host) => {
+      const result = await runCli(["--repo", fixture.repoDir, "--artifact-dir", fixture.artifactDir], {
+        ...process.env,
+        LOCAL_AI_OLLAMA_HOSTS: host,
+      });
+
+      assert.equal(result.code, 0, result.stderr);
+      assert.ok(existsSync(path.join(fixture.artifactDir, "result.json")));
+      assert.ok(existsSync(path.join(fixture.artifactDir, "summary.md")));
+
+      const artifact = parseArtifact(path.join(fixture.artifactDir, "result.json"));
+      const summary = readFileSync(path.join(fixture.artifactDir, "summary.md"), "utf8");
+
+      assert.equal(artifact.decision, "continue");
+      assert.equal(artifact.exit_code, 0);
+      assert.equal(artifact.status, "ok");
+      assert.deepEqual(artifact.reasons, ["git_repo", "ollama_probe_ok", "summary_created"]);
+      assert.ok(summary.includes("[redacted-path]"));
+      assert.ok(summary.includes("[redacted-host]"));
+      assert.ok(summary.includes("[redacted-value]"));
+      assert.ok(!summary.includes("/Users/demo/project"));
+      assert.ok(!summary.includes("10.24.3.8"));
+      assert.ok(!summary.includes("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"));
+      assertMatchesResultSchema(artifact);
+    });
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("result schema rejects mismatched decision and exit code pairs", () => {
+  const validate = createResultValidator();
+  const artifact = {
+    schema_version: "1",
+    tool_version: "0.1.0",
+    decision: "continue",
+    exit_code: 1,
+    status: "ok",
+    reasons: ["git_repo", "ollama_probe_ok", "summary_skipped"],
+    artifact_dir: "/tmp/run",
+    summary_path: "/tmp/run/summary.md",
+    result_path: "/tmp/run/result.json",
+    created_at: "2026-05-09T00:00:00.000Z",
+    repo_name: "demo-repo",
+    run_id: "20260509T000000Z",
+  };
+
+  assert.equal(validate(artifact), false);
+});
+
+test("summary safety rule removes path-like and assignment-like values", () => {
+  const input =
+    "opaque_value=ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 /Users/demo/project C:\\Users\\demo\\work 10.24.3.8";
+  const output = sanitizeSummaryForArtifact(input);
+
+  assert.equal(SUMMARY_SAFETY_RULE, "public_summary_v1");
+  assert.ok(output.includes("[redacted-value]"));
+  assert.ok(output.includes("[redacted-path]"));
+  assert.ok(output.includes("[redacted-host]"));
+  assert.ok(!output.includes("/Users/demo/project"));
+  assert.ok(!output.includes("10.24.3.8"));
+  assert.ok(!output.includes("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"));
 });

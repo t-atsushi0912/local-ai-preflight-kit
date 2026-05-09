@@ -12,6 +12,7 @@
     "verify": "npm run build && node --test tests/*.test.js && node dist/cli.js --help >/dev/null && node dist/cli.js --version >/dev/null"
   },
   "devDependencies": {
+    "ajv": "^8.17.1",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   }

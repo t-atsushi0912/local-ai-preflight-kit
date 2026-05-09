@@ -14,7 +14,7 @@
 - `.local-ai-preflight/` は git で ignore します。
 - 生成された run output は commit しないでください。
 - generated artifacts を外部公開しないでください。
-- `summary.md` は短い確認用の内容に絞り、機密値やローカル環境固有 path をそのまま残さない方針です。
+- `summary.md` は `public_summary_v1` を通した短い確認用の内容に絞り、機密値やローカル環境固有 path をそのまま残さない方針です。
 
 ## Endpoint Rules
 
@@ -35,3 +35,4 @@
 - commit する例に固定の machine path を書かないでください。
 - local wrapper 用の path は共有 repository ではなく、各自の local configuration に置いてください。
 - review 用の artifact にも、手元の環境をそのまま広げる長文 summary は残さないでください。
+- JSON の path field は current platform の表現をそのまま持つため、共有時は path の扱いを確認してください。

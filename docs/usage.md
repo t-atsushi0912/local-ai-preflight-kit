@@ -21,6 +21,8 @@ node dist/cli.js --repo . --no-summarize --artifact-dir /tmp/local-ai-preflight-
 
 `continue` は exit code `0`、`review` は `1`、`stop` は `2` です。
 
+`schemas/result.schema.json` が `result.json` の契約です。`artifact_dir` はその run directory、`result_path` と `summary_path` はその実行環境で CLI が解決した path を記録します。
+
 ## Ollama を確認する
 
 ```bash
@@ -45,13 +47,15 @@ file を使う場合:
 scripts/ollama_summarize.sh --input-file /path/to/context.txt
 ```
 
-summary に渡す内容は短く保ち、機密値 は含めないでください。TypeScript 版の `summary.md` も短い確認用の内容だけを残します。
+summary に渡す内容は短く保ち、機密値 は含めないでください。TypeScript 版の `summary.md` も `public_summary_v1` を通した短い確認用の内容だけを残します。
 
-## Preflight を実行する
+## shell 参考実装を使う
 
 ```bash
 scripts/local-ai-preflight --repo .
 ```
+
+shell 版は参考実装です。主実装と契約の正本は TypeScript CLI 側を参照してください。
 
 artifact root を変える場合:
 

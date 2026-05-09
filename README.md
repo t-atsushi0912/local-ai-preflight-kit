@@ -9,6 +9,7 @@
 - `src/`: TypeScript 製の preflight CLI 本体です。
 - `dist/`: build 後に生成される CLI output です。
 - `tests/ts_preflight.test.js`: TypeScript CLI の契約を確認する test です。
+- `schemas/result.schema.json`: `result.json` の公開向け契約です。
 - `scripts/ollama_probe.sh`: ローカルの Ollama `/api/tags` 候補を確認します。
 - `scripts/ollama_summarize.sh`: stdin または file の内容をローカル Ollama API で要約します。
 - `scripts/local-ai-preflight`: 参考実装として残している shell 版です。
@@ -31,7 +32,7 @@ node dist/cli.js --repo . --no-summarize
 .local-ai-preflight/artifacts/
 ```
 
-この directory は git の管理対象外です。TypeScript CLI は `result.json` と `summary.md` を書き出し、`latest/` も更新します。
+この directory は git の管理対象外です。TypeScript CLI は `result.json` と `summary.md` を書き出し、同じ root 内の `latest/` も更新します。`result.json` の path field には、その実行で CLI が解決した path をそのまま記録します。
 
 ## Decision と Exit Code
 
@@ -53,7 +54,7 @@ cp examples/config.env.example .env
 
 ## Legacy Shell Scripts
 
-既存の shell scripts は参考実装として残しています。TypeScript CLI の契約を固めるまでは互換補助として扱い、今後の中核は `src/` 側に寄せます。
+既存の shell scripts は参考実装として残しています。契約の正本は TypeScript CLI と `schemas/result.schema.json` です。shell 版は互換補助として扱い、主導線には戻しません。
 
 ## Cleanup
 
@@ -76,7 +77,7 @@ scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14 --
 - 生成された artifact を公開しないでください。
 - scripts は既定でローカルの Ollama endpoint のみを対象にします。
 - `.local-ai-preflight/` は version control に含めないでください。
-- TypeScript CLI の `summary.md` は短い確認用の内容に絞り、機密値やローカル環境固有 path をそのまま出さない方針です。
+- TypeScript CLI の `summary.md` は `public_summary_v1` で短い確認用に整え、機密値やローカル環境固有 path をそのまま出さない方針です。
 
 ## Non-goals
 
