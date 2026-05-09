@@ -12,6 +12,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: TypeScript tests
+        run: npm test
+
+      - name: Verify
+        run: npm run verify
+
       - name: Shell syntax
         run: bash -n scripts/local-ai-preflight scripts/preflight-cleanup scripts/ollama_probe.sh scripts/ollama_summarize.sh examples/codex-shim
 
@@ -62,7 +79,7 @@ jobs:
               "s" + "sh",
           ]
           pattern = re.compile("|".join(re.escape(term) for term in terms))
-          ignored = {".git"}
+          ignored = {".git", "node_modules", "dist"}
           hits = []
           for path in pathlib.Path(".").rglob("*"):
               if any(part in ignored for part in path.parts) or not path.is_file():

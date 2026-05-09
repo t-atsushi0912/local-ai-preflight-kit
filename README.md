@@ -1,34 +1,45 @@
 # local-ai-preflight-kit
 
-`local-ai-preflight-kit` は、大きな AI CLI セッションを始める前に、ローカル環境で短い事前確認を行うための小さな shell script 集です。
+`local-ai-preflight-kit` は、AI CLI セッションを始める前に、ローカル環境で短い事前確認を行うための小さな TypeScript CLI です。
 
-ワークフローは local-only を前提にしています。最小限の git context を集め、ローカルの Ollama endpoint を確認し、小さな artifact を書き出し、続行前に見直せる短い summary を残します。
+ワークフローは local-only を前提にしています。最小限の git context を集め、ローカルの Ollama endpoint を確認し、`decision` と `exit code` を固定した小さな artifact を書き出します。
 
 ## 提供内容
 
+- `src/`: TypeScript 製の preflight CLI 本体です。
+- `dist/`: build 後に生成される CLI output です。
+- `tests/ts_preflight.test.js`: TypeScript CLI の契約を確認する test です。
 - `scripts/ollama_probe.sh`: ローカルの Ollama `/api/tags` 候補を確認します。
 - `scripts/ollama_summarize.sh`: stdin または file の内容をローカル Ollama API で要約します。
-- `scripts/local-ai-preflight`: 短い git context を取得し、preflight artifact を書き出します。
+- `scripts/local-ai-preflight`: 参考実装として残している shell 版です。
 - `scripts/preflight-cleanup`: 古い preflight 実行 directory を整理します。既定は dry-run です。
-- `examples/codex-shim`: 実際の CLI binary を呼ぶ前に preflight を挟む wrapper 例です。
+- `examples/codex-shim`: TypeScript CLI を実際の CLI binary の前段に置く wrapper 例です。
 
 ## 使い方
 
-clone 後は次のように実行できます。
+依存を入れて build した後は次のように実行できます。
 
 ```bash
-scripts/ollama_probe.sh
-scripts/local-ai-preflight --repo .
-scripts/preflight-cleanup --root .local-ai-preflight/artifacts --dry-run
+npm install
+npm run build
+node dist/cli.js --repo . --no-summarize
 ```
 
-既定の preflight artifact root は次のとおりです。
+既定の artifact root は次のとおりです。
 
 ```text
 .local-ai-preflight/artifacts/
 ```
 
-この directory は git の管理対象外です。
+この directory は git の管理対象外です。TypeScript CLI は `result.json` と `summary.md` を書き出し、`latest/` も更新します。
+
+## Decision と Exit Code
+
+- `continue` は exit code `0` です。
+- `review` は exit code `1` です。
+- `stop` は exit code `2` です。
+
+`review` と `stop` は、そのまま実行を続ける前に見直す前提です。
 
 ## 設定
 
@@ -39,6 +50,10 @@ cp examples/config.env.example .env
 ```
 
 その後、手元の環境に合わせて値を調整します。既定のローカル endpoint で Ollama が利用できる場合、この file がなくても scripts は動作します。
+
+## Legacy Shell Scripts
+
+既存の shell scripts は参考実装として残しています。TypeScript CLI の契約を固めるまでは互換補助として扱い、今後の中核は `src/` 側に寄せます。
 
 ## Cleanup
 
@@ -53,7 +68,7 @@ scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14 --
 
 ## CI
 
-同梱の workflow では shell syntax、help output、fixture cleanup の挙動、preflight smoke の挙動、公開前提の safety scan を確認します。
+同梱の workflow では `npm run build`、`npm test`、`npm run verify`、shell syntax、fixture cleanup、shell smoke、公開前提の scan を確認します。
 
 ## Safety Notes
 
@@ -61,6 +76,7 @@ scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14 --
 - 生成された artifact を公開しないでください。
 - scripts は既定でローカルの Ollama endpoint のみを対象にします。
 - `.local-ai-preflight/` は version control に含めないでください。
+- TypeScript CLI の `summary.md` は短い確認用の内容に絞り、機密値やローカル環境固有 path をそのまま出さない方針です。
 
 ## Non-goals
 

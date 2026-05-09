@@ -2,7 +2,7 @@
 set -euo pipefail
 
 KIT_ROOT="${LOCAL_AI_PREFLIGHT_KIT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-PREFLIGHT="${KIT_ROOT}/scripts/local-ai-preflight"
+PREFLIGHT_JS="${LOCAL_AI_PREFLIGHT_JS:-${KIT_ROOT}/dist/cli.js}"
 REAL_BIN="${CODEX_REAL_BIN:-}"
 
 if [[ -z "${REAL_BIN}" ]]; then
@@ -15,10 +15,19 @@ if [[ ! -x "${REAL_BIN}" ]]; then
   exit 127
 fi
 
-if [[ ! -x "${PREFLIGHT}" ]]; then
-  echo "codex-shim example: local-ai-preflight is not executable." >&2
+if [[ ! -f "${PREFLIGHT_JS}" ]]; then
+  echo "codex-shim example: build the TypeScript preflight CLI before use." >&2
   exit 127
 fi
 
-"${PREFLIGHT}" --repo "$(pwd)" >/dev/null
-exec "${REAL_BIN}" "$@"
+if ! command -v node >/dev/null 2>&1; then
+  echo "codex-shim example: node is required." >&2
+  exit 127
+fi
+
+if node "${PREFLIGHT_JS}" --repo "$(pwd)" >/dev/null; then
+  exec "${REAL_BIN}" "$@"
+fi
+
+preflight_exit="$?"
+exit "${preflight_exit}"

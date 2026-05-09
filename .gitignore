@@ -1,4 +1,6 @@
 .local-ai-preflight/
+dist/
+node_modules/
 artifacts/
 outputs/
 logs/
