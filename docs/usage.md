@@ -49,6 +49,8 @@ scripts/ollama_summarize.sh --input-file /path/to/context.txt
 
 summary に渡す内容は短く保ち、機密値 は含めないでください。TypeScript 版の `summary.md` も `public_summary_v1` を通した短い確認用の内容だけを残します。
 
+通常 test は mock endpoint で安定させます。real Ollama の任意 test を手元で動かす場合は `LOCAL_AI_RUN_REAL_OLLAMA_TESTS=1 node --test tests/ts_preflight.real_ollama.test.js` を使います。local endpoint が未応答なら `not_available` 扱いで、通常の verify 条件には含めません。
+
 ## shell 参考実装を使う
 
 ```bash

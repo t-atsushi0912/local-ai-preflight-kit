@@ -10,6 +10,7 @@ const Ajv2020 = require("ajv/dist/2020");
 const repoRoot = path.resolve(__dirname, "..");
 const cliPath = path.join(repoRoot, "dist", "cli.js");
 const schemaPath = path.join(repoRoot, "schemas", "result.schema.json");
+const fixtureDir = path.join(repoRoot, "tests", "fixtures");
 const { sanitizeSummaryForArtifact, SUMMARY_SAFETY_RULE } = require(path.join(
   repoRoot,
   "dist",
@@ -49,6 +50,10 @@ function createRepoFixture() {
 
 function parseArtifact(resultPath) {
   return JSON.parse(readFileSync(resultPath, "utf8"));
+}
+
+function parseFixture(name) {
+  return JSON.parse(readFileSync(path.join(fixtureDir, name), "utf8"));
 }
 
 function assertMatchesResultSchema(artifact) {
@@ -261,22 +266,21 @@ test("summarize success returns continue and writes sanitized summary output", a
 
 test("result schema rejects mismatched decision and exit code pairs", () => {
   const validate = createResultValidator();
-  const artifact = {
-    schema_version: "1",
-    tool_version: "0.1.0",
-    decision: "continue",
-    exit_code: 1,
-    status: "ok",
-    reasons: ["git_repo", "ollama_probe_ok", "summary_skipped"],
-    artifact_dir: "/tmp/run",
-    summary_path: "/tmp/run/summary.md",
-    result_path: "/tmp/run/result.json",
-    created_at: "2026-05-09T00:00:00.000Z",
-    repo_name: "demo-repo",
-    run_id: "20260509T000000Z",
-  };
+  const artifact = parseFixture("result-invalid-exit-code.json");
 
   assert.equal(validate(artifact), false);
+});
+
+test("result schema accepts the standalone valid fixture", () => {
+  const artifact = parseFixture("result-valid-summary-created.json");
+
+  assertMatchesResultSchema(artifact);
+});
+
+test("result schema forbids additional properties", () => {
+  const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
+
+  assert.equal(schema.additionalProperties, false);
 });
 
 test("summary safety rule removes path-like and assignment-like values", () => {
