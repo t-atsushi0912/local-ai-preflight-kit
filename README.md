@@ -34,6 +34,8 @@ node dist/cli.js --repo . --no-summarize
 
 この directory は git の管理対象外です。TypeScript CLI は `result.json` と `summary.md` を書き出し、同じ root 内の `latest/` も更新します。`result.json` の path field には、その実行で CLI が解決した path をそのまま記録します。
 
+TypeScript CLI には `--artifact-dir`、`--artifact-root`、`--max-bytes`、`--no-summarize`、`--help`、`--version` があります。機械判定は `result.json` を正本として扱い、stdout は短い案内出力です。
+
 ## Decision と Exit Code
 
 - `continue` は exit code `0` です。
@@ -71,7 +73,7 @@ scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14 --
 
 同梱の workflow では `npm run build`、`npm test`、`npm run verify`、shell syntax、fixture cleanup、shell smoke、公開前提の scan を確認します。
 
-通常 test は mock endpoint で安定させています。real Ollama の任意 test は `LOCAL_AI_RUN_REAL_OLLAMA_TESTS=1 node --test tests/ts_preflight.real_ollama.test.js` で明示実行し、local endpoint が未応答なら `not_available` 扱いにします。
+通常 test は mock endpoint で安定させています。real Ollama の任意 test は `LOCAL_AI_RUN_REAL_OLLAMA_TESTS=1 LOCAL_AI_OLLAMA_HOSTS="http://127.0.0.1:11434" node --test tests/ts_preflight.real_ollama.test.js` で明示実行し、local endpoint が未応答なら `not_available` 扱いにします。
 
 ## Safety Notes
 

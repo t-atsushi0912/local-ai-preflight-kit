@@ -19,9 +19,23 @@ artifact directory を明示する場合:
 node dist/cli.js --repo . --no-summarize --artifact-dir /tmp/local-ai-preflight-run
 ```
 
+artifact root を指定して timestamp 付き run directory を切る場合:
+
+```bash
+node dist/cli.js --repo . --artifact-root .local-ai-preflight/artifacts
+```
+
+context byte 上限を調整する場合:
+
+```bash
+node dist/cli.js --repo . --max-bytes 8000
+```
+
 `continue` は exit code `0`、`review` は `1`、`stop` は `2` です。
 
-`schemas/result.schema.json` が `result.json` の契約です。`artifact_dir` はその run directory、`result_path` と `summary_path` はその実行環境で CLI が解決した path を記録します。
+`schemas/result.schema.json` が `result.json` の契約です。`artifact_dir` はその run directory、`result_path` と `summary_path` はその実行環境で CLI が解決した path を記録します。機械判定は `result.json` を正本として扱い、stdout は短い実行案内に留めます。
+
+TypeScript CLI は `LOCAL_AI_CONTEXT_MAX_BYTES`、`LOCAL_AI_OLLAMA_HOSTS`、`LOCAL_AI_OLLAMA_MODEL`、`LOCAL_AI_PROBE_TIMEOUT_SECONDS`、`LOCAL_AI_SUMMARY_TIMEOUT_SECONDS`、`LOCAL_AI_NUM_PREDICT` を読みます。
 
 ## Ollama を確認する
 
@@ -49,7 +63,7 @@ scripts/ollama_summarize.sh --input-file /path/to/context.txt
 
 summary に渡す内容は短く保ち、機密値 は含めないでください。TypeScript 版の `summary.md` も `public_summary_v1` を通した短い確認用の内容だけを残します。
 
-通常 test は mock endpoint で安定させます。real Ollama の任意 test を手元で動かす場合は `LOCAL_AI_RUN_REAL_OLLAMA_TESTS=1 node --test tests/ts_preflight.real_ollama.test.js` を使います。local endpoint が未応答なら `not_available` 扱いで、通常の verify 条件には含めません。
+通常 test は mock endpoint で安定させます。real Ollama の任意 test を手元で動かす場合は `LOCAL_AI_RUN_REAL_OLLAMA_TESTS=1 LOCAL_AI_OLLAMA_HOSTS="http://127.0.0.1:11434" node --test tests/ts_preflight.real_ollama.test.js` を使います。local endpoint が未応答なら `not_available` 扱いで、通常の verify 条件には含めません。
 
 ## shell 参考実装を使う
 

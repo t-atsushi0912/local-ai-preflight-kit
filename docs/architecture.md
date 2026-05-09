@@ -20,6 +20,8 @@ TypeScript 版の `result.json` では次の契約を固定します。正本の
 
 `schema_version` は `result.json` の破壊的変更時に上げます。unknown field を許可していないため、新しい field の追加や既存 enum の非互換な拡張は新しい version として扱います。実装修正や docs 更新だけでは上げません。
 
+CLI の stdout/stderr は実行案内とエラー表示に絞り、機械判定の正本は `result.json` に置きます。
+
 ## Probe
 
 `scripts/ollama_probe.sh` は、短い候補一覧に対してローカルの Ollama endpoint を確認します。既定の候補は loopback host です。必要なら `LOCAL_AI_OLLAMA_HOSTS` で候補一覧を差し替えられます。
