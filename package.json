@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Local AI CLI preflight gate with a minimal TypeScript core.",
+  "license": "MIT",
   "bin": {
     "local-ai-preflight": "dist/cli.js"
   },

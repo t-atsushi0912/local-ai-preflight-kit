@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { execFileSync, spawn } = require("node:child_process");
-const { mkdtempSync, readFileSync, rmSync } = require("node:fs");
+const { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
@@ -13,9 +13,9 @@ function createRepoFixture() {
   const repoDir = path.join(fixture, "repo");
   const artifactDir = path.join(fixture, "artifact");
 
-  execFileSync("mkdir", ["-p", repoDir]);
+  mkdirSync(repoDir, { recursive: true });
   execFileSync("git", ["-C", repoDir, "init"], { stdio: "ignore" });
-  execFileSync("bash", ["-lc", "printf 'hello\\n' > README.md"], { cwd: repoDir });
+  writeFileSync(path.join(repoDir, "README.md"), "hello\n", "utf8");
   execFileSync("git", ["-C", repoDir, "add", "README.md"], { stdio: "ignore" });
   execFileSync(
     "git",

@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { execFileSync, spawn, spawnSync } = require("node:child_process");
-const { existsSync, mkdtempSync, readFileSync, rmSync } = require("node:fs");
+const { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require("node:fs");
 const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
@@ -28,9 +28,9 @@ function createRepoFixture() {
   const repoDir = path.join(fixture, "repo");
   const artifactDir = path.join(fixture, "artifact");
 
-  execFileSync("mkdir", ["-p", repoDir]);
+  mkdirSync(repoDir, { recursive: true });
   execFileSync("git", ["-C", repoDir, "init"], { stdio: "ignore" });
-  execFileSync("bash", ["-lc", "printf 'hello\\n' > README.md"], { cwd: repoDir });
+  writeFileSync(path.join(repoDir, "README.md"), "hello\n", "utf8");
   execFileSync("git", ["-C", repoDir, "add", "README.md"], { stdio: "ignore" });
   execFileSync(
     "git",
@@ -86,9 +86,20 @@ function runCli(args, env) {
   });
 }
 
-async function withProbeServer(handler, run) {
+async function withProbeServer(t, handler, run) {
   const server = http.createServer(handler);
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    await new Promise((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", resolve);
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && (error.code === "EPERM" || error.code === "EACCES")) {
+      t.skip("loopback listen is not permitted in this environment");
+      return;
+    }
+    throw error;
+  }
   const address = server.address();
   assert.ok(address && typeof address === "object");
   const url = `http://127.0.0.1:${address.port}`;
@@ -100,11 +111,11 @@ async function withProbeServer(handler, run) {
   }
 }
 
-test("continue decision writes parseable artifacts and updates latest", async () => {
+test("continue decision writes parseable artifacts and updates latest", async (t) => {
   const fixture = createRepoFixture();
 
   try {
-    await withProbeServer((request, response) => {
+    await withProbeServer(t, (request, response) => {
       if (request.url === "/api/tags") {
         response.writeHead(200, { "Content-Type": "application/json" });
         response.end('{"models":[]}');
@@ -200,11 +211,11 @@ test("stop decision is returned outside git repositories", () => {
   }
 });
 
-test("summarize success returns continue and writes sanitized summary output", async () => {
+test("summarize success returns continue and writes sanitized summary output", async (t) => {
   const fixture = createRepoFixture();
 
   try {
-    await withProbeServer((request, response) => {
+    await withProbeServer(t, (request, response) => {
       if (request.url === "/api/tags") {
         response.writeHead(200, { "Content-Type": "application/json" });
         response.end('{"models":[{"name":"gemma3:latest"}]}');
