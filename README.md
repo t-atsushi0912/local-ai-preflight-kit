@@ -28,6 +28,8 @@ node dist/cli.js --repo . --no-summarize
 
 local package として配布確認する場合は `npm pack` で tgz を作り、別 directory で `npm install ../local-ai-preflight-kit-0.1.0.tgz` のように入れて `npx local-ai-preflight --help` を確認できます。npm publish 済みの前提は置きません。
 
+公開直前の確認項目は [`docs/release-checklist.md`](docs/release-checklist.md) にまとめています。`private=true` は npm publish を実行する直前まで維持します。
+
 既定の artifact root は次のとおりです。
 
 ```text
