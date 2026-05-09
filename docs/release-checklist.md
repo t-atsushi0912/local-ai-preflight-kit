@@ -21,7 +21,7 @@
 - `/tmp` 配下で `npx local-ai-preflight --version`
 - `/tmp` 配下で `npx local-ai-preflight --repo <repo-path> --no-summarize --artifact-dir <tmp-artifact-dir>`
 
-real Ollama 成功経路は任意確認です。local endpoint が未応答なら `review` と exit code `1` を契約どおりと扱います。
+real Ollama 成功経路は任意確認です。必要なら `LOCAL_AI_RUN_REAL_OLLAMA_TESTS=1` と `LOCAL_AI_REAL_OLLAMA_HOSTS`、または `LOCAL_AI_OLLAMA_HOSTS` を使います。local endpoint が未応答なら `review` と exit code `1` を契約どおりと扱います。
 
 ## Public Scan
 

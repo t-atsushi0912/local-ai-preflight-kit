@@ -77,7 +77,7 @@ scripts/preflight-cleanup --root .local-ai-preflight/artifacts --keep-days 14 --
 
 同梱の workflow では `npm run build`、`npm test`、`npm run verify`、shell syntax、fixture cleanup、shell smoke、公開前提の scan を確認します。
 
-通常 test は mock endpoint で安定させています。real Ollama の任意 test は `LOCAL_AI_RUN_REAL_OLLAMA_TESTS=1 LOCAL_AI_OLLAMA_HOSTS="http://127.0.0.1:11434" node --test tests/ts_preflight.real_ollama.test.js` で明示実行し、local endpoint が未応答なら `not_available` 扱いにします。
+通常 test は mock endpoint で安定させています。real Ollama の任意 test は `LOCAL_AI_RUN_REAL_OLLAMA_TESTS=1 LOCAL_AI_REAL_OLLAMA_HOSTS="<candidate-hosts>" node --test tests/ts_preflight.real_ollama.test.js` で明示実行します。`LOCAL_AI_REAL_OLLAMA_HOSTS` を省く場合は `LOCAL_AI_OLLAMA_HOSTS` を使います。local endpoint が未応答なら `not_available` 扱いにします。
 
 ## Safety Notes
 
