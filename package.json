@@ -4,6 +4,14 @@
   "private": true,
   "description": "Local AI CLI preflight gate with a minimal TypeScript core.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/t-atsushi0912/local-ai-preflight-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/t-atsushi0912/local-ai-preflight-kit/issues"
+  },
+  "homepage": "https://github.com/t-atsushi0912/local-ai-preflight-kit#readme",
   "bin": {
     "local-ai-preflight": "dist/cli.js"
   },
