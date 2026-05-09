@@ -26,7 +26,7 @@ npm run build
 node dist/cli.js --repo . --no-summarize
 ```
 
-local package として配布確認する場合は `npm pack` で tgz を作り、別 directory で `npm install ../local-ai-preflight-kit-0.1.0.tgz` のように入れて `npx local-ai-preflight --help` を確認できます。npm publish 済みの前提は置きません。
+local package として配布確認する場合は `npm pack --pack-destination /tmp/local-ai-preflight-pack` で tgz を作り、別 directory で `npm install /tmp/local-ai-preflight-pack/local-ai-preflight-kit-0.1.0.tgz` のように入れて `npx local-ai-preflight --help` を確認できます。repo root に tgz を残さず、npm publish 済みの前提も置きません。
 
 公開直前の確認項目は [`docs/release-checklist.md`](docs/release-checklist.md) にまとめています。`private=true` は npm publish を実行する直前まで維持します。
 

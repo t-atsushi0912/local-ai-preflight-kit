@@ -10,15 +10,15 @@ npm run build
 local package として確認する場合:
 
 ```bash
-npm pack
+npm pack --pack-destination /tmp/local-ai-preflight-pack
 tmpdir="$(mktemp -d)"
 cd "${tmpdir}"
 npm init -y
-npm install /path/to/local-ai-preflight-kit-0.1.0.tgz
+npm install /tmp/local-ai-preflight-pack/local-ai-preflight-kit-0.1.0.tgz
 npx local-ai-preflight --help
 ```
 
-この flow は local install 確認用です。npm publish 済みの前提は置きません。
+この flow は local install 確認用です。repo root に tgz を残さず、npm publish 済みの前提は置きません。
 
 ## TypeScript CLI を実行する
 
