@@ -10,8 +10,8 @@
 - `dist/`: build 後に生成される CLI output です。
 - `tests/ts_preflight.test.js`: TypeScript CLI の契約を確認する test です。
 - `schemas/result.schema.json`: `result.json` の公開向け契約です。
-- `scripts/ollama_probe.sh`: ローカルの Ollama `/api/tags` 候補を確認します。
-- `scripts/ollama_summarize.sh`: stdin または file の内容をローカル Ollama API で要約します。
+- `scripts/ollama_probe.py`: ローカルの Ollama `/api/tags` 候補を確認します。
+- `scripts/ollama_summarize.py`: stdin または file の内容をローカル Ollama API で要約します。
 - `scripts/local-ai-preflight`: 参考実装として残している shell 版です。
 - `scripts/preflight-cleanup`: 古い preflight 実行 directory を整理します。既定は dry-run です。
 - `examples/codex-shim`: TypeScript CLI を実際の CLI binary の前段に置く wrapper 例です。
@@ -60,7 +60,7 @@ cp examples/config.env.example .env
 
 ## Legacy Shell Scripts
 
-既存の shell scripts は参考実装として残しています。契約の正本は TypeScript CLI と `schemas/result.schema.json` です。shell 版は互換補助として扱い、主導線には戻しません。
+既存の shell entrypoint は参考実装として残しています。契約の正本は TypeScript CLI と `schemas/result.schema.json` です。Ollama probe / summarize 補助は Python entrypoint へ移行済みで、shell 版は主導線に戻しません。
 
 ## Cleanup
 

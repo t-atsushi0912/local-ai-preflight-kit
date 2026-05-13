@@ -25,7 +25,7 @@
     "build": "tsc -p tsconfig.json && node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
     "prepack": "npm run build",
     "test": "npm run build && node --test tests/*.test.js",
-    "verify": "npm run build && node --test tests/*.test.js && node dist/cli.js --help >/dev/null && node dist/cli.js --version >/dev/null"
+    "verify": "npm run build && node --test tests/*.test.js && node dist/cli.js --help >/dev/null && node dist/cli.js --version >/dev/null && python3 tests/preflight_smoke_test.py"
   },
   "devDependencies": {
     "ajv": "^8.17.1",

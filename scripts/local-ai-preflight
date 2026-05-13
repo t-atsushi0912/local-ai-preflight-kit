@@ -113,7 +113,7 @@ selected_host=""
 summary="Local Ollama probe did not find a reachable endpoint."
 
 set +e
-probe_output="$(bash "${SCRIPT_DIR}/ollama_probe.sh" 2>&1)"
+probe_output="$(python3 "${SCRIPT_DIR}/ollama_probe.py" 2>&1)"
 probe_exit="$?"
 set -e
 
@@ -121,7 +121,7 @@ if [[ "${probe_exit}" -eq 0 ]]; then
   selected_host="$(printf '%s\n' "${probe_output}" | sed -n 's/^selected_host=//p' | head -1)"
   if [[ "${RUN_SUMMARY}" -eq 1 ]]; then
     set +e
-    summary_output="$(printf '%s' "${context}" | LOCAL_AI_OLLAMA_HOST="${selected_host}" bash "${SCRIPT_DIR}/ollama_summarize.sh" 2>&1)"
+    summary_output="$(printf '%s' "${context}" | LOCAL_AI_OLLAMA_HOST="${selected_host}" python3 "${SCRIPT_DIR}/ollama_summarize.py" 2>&1)"
     summary_exit="$?"
     set -e
     if [[ "${summary_exit}" -eq 0 ]]; then

@@ -59,25 +59,25 @@ TypeScript CLI は `LOCAL_AI_CONTEXT_MAX_BYTES`、`LOCAL_AI_OLLAMA_HOSTS`、`LOC
 ## Ollama を確認する
 
 ```bash
-scripts/ollama_probe.sh
+python3 scripts/ollama_probe.py
 ```
 
 候補を上書きする場合:
 
 ```bash
-LOCAL_AI_OLLAMA_HOSTS="http://localhost:11434" scripts/ollama_probe.sh
+LOCAL_AI_OLLAMA_HOSTS="http://localhost:11434" python3 scripts/ollama_probe.py
 ```
 
 ## Text を要約する
 
 ```bash
-git status --short | scripts/ollama_summarize.sh
+git status --short | python3 scripts/ollama_summarize.py
 ```
 
 file を使う場合:
 
 ```bash
-scripts/ollama_summarize.sh --input-file /path/to/context.txt
+python3 scripts/ollama_summarize.py --input-file /path/to/context.txt
 ```
 
 summary に渡す内容は短く保ち、機密値 は含めないでください。TypeScript 版の `summary.md` も `public_summary_v1` を通した短い確認用の内容だけを残します。

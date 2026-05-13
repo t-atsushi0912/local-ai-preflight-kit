@@ -29,20 +29,22 @@ jobs:
       - name: Verify
         run: npm run verify
 
-      - name: Shell syntax
-        run: bash -n scripts/local-ai-preflight scripts/preflight-cleanup scripts/ollama_probe.sh scripts/ollama_summarize.sh examples/codex-shim
+      - name: Script syntax
+        run: |
+          bash -n scripts/local-ai-preflight scripts/preflight-cleanup examples/codex-shim
+          python3 -m py_compile scripts/ollama_probe.py scripts/ollama_summarize.py tests/preflight_smoke_test.py
 
       - name: Help smoke
         run: |
-          scripts/ollama_probe.sh --help
-          scripts/ollama_summarize.sh --help
+          python3 scripts/ollama_probe.py --help
+          python3 scripts/ollama_summarize.py --help
           scripts/local-ai-preflight --help
           scripts/preflight-cleanup --help
 
       - name: Fixture tests
         run: |
           tests/cleanup_fixture_test.sh
-          tests/preflight_smoke_test.sh
+          python3 tests/preflight_smoke_test.py
 
       - name: Public scan
         run: |
